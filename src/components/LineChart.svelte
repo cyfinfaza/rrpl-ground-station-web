@@ -34,19 +34,23 @@
 	onMount(() => {
 		chart = lightningChart()
 			.ChartXY({ container: chartElem, theme: basicTheme })
-			.setTitle("Svelte example");
+			.setTitle("Sensor data");
 		chart.addLegendBox().add(chart);
 		chart
 			.getDefaultAxisX()
 			.setScrollStrategy(AxisScrollStrategies.progressive)
 			.setInterval({
 				start: 0,
-				end: 200, // 60 seconds as milliseconds
+				end: 400, // 60 seconds as milliseconds
 				stopAxisAfter: false,
 			});
 		animFrame();
+		const seriesInterval = setInterval(() => {
+			chart.addLegendBox().add(chart);
+		}, 5000);
 		return () => {
 			chart.dispose();
+			clearInterval(seriesInterval);
 		};
 	});
 </script>

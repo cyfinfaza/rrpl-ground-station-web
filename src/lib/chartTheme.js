@@ -4,7 +4,7 @@ import { ColorHEX, FontSettings } from "@arction/lcjs";
 export const basicTheme = makeFlatTheme({
 	isDark: true,
 	fontFamily: "Roboto Mono",
-	fontWeight: "normal",
+	fontWeight: "bold",
 	backgroundColor: ColorHEX("#18181800"),
 	textColor: ColorHEX("#ffffc8ff"),
 	dataColors: [

@@ -139,7 +139,7 @@
 					Connected
 				{/if}
 			{:else}
-				Click to connect
+				Click to connect serial (requires Chromium-based browser)
 			{/if}
 		</button>
 		{#if serialPort}

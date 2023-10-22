@@ -6,6 +6,8 @@
 
 	let serialPort = null;
 	let usbDeviceInfo = null;
+	let randomDataMode = false;
+	let numRandomSamplesPerFrame = 4;
 
 	$: if (serialPort) {
 		const portInfo = serialPort.getInfo();
@@ -165,13 +167,19 @@
 				((Date.now() - timeWhenConnected) / 1000)
 			).toPrecision(3)} Hz
 		</p>
-		<button on:click={() => generateRandomData()}>Start random data</button>
-		<button on:click={() => clearInterval(randomDataInterval)}
-			>Stop random data</button
-		>
+		<h3>Low-level random data generator</h3>
+		<p>
+			Random samples per frame: <input
+				type="number"
+				bind:value={numRandomSamplesPerFrame}
+				style="width: 100px;"
+			/>
+		</p>
+		<button on:click={() => (randomDataMode = true)}>Start LLRD mode</button>
+		<button on:click={() => (randomDataMode = false)}>Stop LLRD mode</button>
 	</div>
 	<div class="graphs">
-		<LineChart {data} />
+		<LineChart {data} {randomDataMode} {numRandomSamplesPerFrame} />
 		<!-- <LineChart {data} />
 		<LineChart {data} />
 		<LineChart {data} /> -->
@@ -196,8 +204,16 @@
 		flex-direction: column;
 		padding: 8px;
 		gap: 8px;
-		p {
+		p,
+		h1,
+		h2,
+		h3 {
 			margin: 0;
+		}
+		h1,
+		h2,
+		h3 {
+			margin-top: 4px;
 		}
 	}
 </style>

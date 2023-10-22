@@ -45,7 +45,26 @@
 		}
 		numDataPoints = Object.values(newData)[0]?.length;
 		// data = data.concat(newData);
-		if (serialPort) requestAnimationFrame(updateDataFromSerialStream);
+		if (serialPort || randomDataInterval)
+			requestAnimationFrame(updateDataFromSerialStream);
+	}
+
+	let randomDataInterval = null;
+	function generateRandomData() {
+		randomDataInterval = setInterval(() => {
+			serialDataStream.push(
+				JSON.stringify([
+					Math.random() * 10,
+					Math.random() * 10,
+					Math.random() * 10,
+					Math.random() * 10,
+					Math.random() * 10,
+					Math.random() * 10,
+				])
+			);
+		}, 5);
+		timeWhenConnected = Date.now();
+		requestAnimationFrame(updateDataFromSerialStream);
 	}
 
 	function initSerial() {
@@ -146,6 +165,10 @@
 				((Date.now() - timeWhenConnected) / 1000)
 			).toPrecision(3)} Hz
 		</p>
+		<button on:click={() => generateRandomData()}>Start random data</button>
+		<button on:click={() => clearInterval(randomDataInterval)}
+			>Stop random data</button
+		>
 	</div>
 	<div class="graphs">
 		<LineChart {data} />

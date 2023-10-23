@@ -3,7 +3,7 @@ import { ColorHEX, FontSettings } from "@arction/lcjs";
 // Created with LCJS Theme Editor https://github.com/Arction/lcjs-themes
 export const basicTheme = makeFlatTheme({
 	isDark: true,
-	fontFamily: "Roboto Mono",
+	fontFamily: "Roboto Mono, sans-serif",
 	fontWeight: "bold",
 	backgroundColor: ColorHEX("#18181800"),
 	textColor: ColorHEX("#ffffc8ff"),

@@ -1,6 +1,10 @@
 <script>
 	import { onMount } from "svelte";
-	import { AxisScrollStrategies, lightningChart } from "@arction/lcjs";
+	import {
+		AxisScrollStrategies,
+		disableThemeEffects,
+		lightningChart,
+	} from "@arction/lcjs";
 	import { basicTheme } from "../lib/chartTheme";
 
 	export let data = {};
@@ -11,35 +15,14 @@
 
 	let chartElem;
 	let chart;
+	let legendbox;
 
 	let numRandomDataPoints = 0;
 
 	function animFrame() {
-		Object.keys(data).forEach((dataset) => {
-			if (!lineSeries[dataset]) {
-				lineSeries[dataset] = chart
-					.addLineSeries({
-						// Optimize line series for progressively increasing X coordinates.
-						dataPattern: { pattern: "ProgressiveX" },
-					})
-					.setName(dataset);
-			}
-			lineSeries[dataset]
-				// .clear()
-				.add(
-					data[dataset]
-						.slice(lineSeries[dataset].getPointAmount())
-						.map((y, i) => ({ x: i + lineSeries[dataset].getPointAmount(), y }))
-				);
-		});
-		if (randomDataMode) addRandomData();
-		numRandomDataPoints = lineSeries?.["rand0"]?.getPointAmount() || 0;
-		requestAnimationFrame(animFrame);
-	}
-
-	function addRandomData() {
-		["rand0", "rand1", "rand2", "rand3", "rand4", "rand5"].forEach(
-			(dataset) => {
+		if (randomDataMode) addRandomData(numRandomSamplesPerFrame);
+		else {
+			Object.keys(data).forEach((dataset) => {
 				if (!lineSeries[dataset]) {
 					lineSeries[dataset] = chart
 						.addLineSeries({
@@ -47,24 +30,72 @@
 							dataPattern: { pattern: "ProgressiveX" },
 						})
 						.setName(dataset);
+					legendbox.add(lineSeries[dataset]);
 				}
 				lineSeries[dataset]
 					// .clear()
 					.add(
-						new Array(numRandomSamplesPerFrame).fill(0).map((_, i) => ({
-							x: lineSeries[dataset].getPointAmount() + i,
-							y: Math.random() * 10,
-						}))
+						data[dataset]
+							.slice(lineSeries[dataset].getPointAmount())
+							.map((y, i) => ({
+								x: i + lineSeries[dataset].getPointAmount(),
+								y,
+							}))
 					);
+			});
+		}
+		numRandomDataPoints = lineSeries?.["rand0"]?.getPointAmount() || 0;
+		requestAnimationFrame(animFrame);
+	}
+
+	function addRandomData(num) {
+		// ["rand0", "rand1", "rand2", "rand3", "rand4", "rand5"].forEach(
+		// 	(dataset) => {
+		// 		if (!lineSeries[dataset]) {
+		// 			lineSeries[dataset] = chart
+		// 				.addLineSeries({
+		// 					// Optimize line series for progressively increasing X coordinates.
+		// 					dataPattern: { pattern: "ProgressiveX" },
+		// 				})
+		// 				.setName(dataset);
+		// 		}
+		// 		lineSeries[dataset]
+		// 			// .clear()
+		// 			.add(
+		// 				new Array(numRandomSamplesPerFrame).fill(0).map((_, i) => ({
+		// 					x: lineSeries[dataset].getPointAmount() + i,
+		// 					y: Math.random() * 10,
+		// 				}))
+		// 			);
+		// 	}
+		// );
+		for (let randI = 0; randI < 6; randI++) {
+			const dataset = `rand${randI}`;
+			if (!lineSeries[dataset]) {
+				console.log("Adding new line series", dataset);
+				lineSeries[dataset] = chart
+					.addLineSeries({
+						// Optimize line series for progressively increasing X coordinates.
+						dataPattern: { pattern: "ProgressiveX" },
+					})
+					.setName(dataset);
+				legendbox.add(lineSeries[dataset]);
 			}
-		);
+
+			lineSeries[dataset].add(
+				new Array(num).fill(0).map((_, i) => ({
+					x: lineSeries[dataset].getPointAmount() + i,
+					y: Math.random() * 10,
+				}))
+			);
+		}
 	}
 
 	onMount(() => {
 		chart = lightningChart()
-			.ChartXY({ container: chartElem, theme: basicTheme })
+			.ChartXY({ container: chartElem, theme: disableThemeEffects(basicTheme) })
 			.setTitle("Sensor data");
-		chart.addLegendBox().add(chart);
+		legendbox = chart.addLegendBox().add(chart);
 		chart
 			.getDefaultAxisX()
 			.setScrollStrategy(AxisScrollStrategies.progressive)
@@ -73,16 +104,19 @@
 				end: 400, // 60 seconds as milliseconds
 				stopAxisAfter: false,
 			});
+		// for (let i = 0; i < 24000; i++) {
+		// 	addRandomData(50);
+		// }
 		animFrame();
-		const seriesInterval = setInterval(() => {
-			chart.addLegendBox().add(chart);
-		}, 5000);
+		// const seriesInterval = setInterval(() => {
+		// 	chart.addLegendBox().add(chart);
+		// }, 5000);
 		// setInterval(() => {
 		// 	if (randomDataMode) addRandomData();
-		// }, 50);
+		// }, 15);
 		return () => {
 			chart.dispose();
-			clearInterval(seriesInterval);
+			// clearInterval(seriesInterval);
 		};
 	});
 </script>

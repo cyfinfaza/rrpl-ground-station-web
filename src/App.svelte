@@ -3,6 +3,7 @@
 	import LineChart from "./components/LineChart.svelte";
 	import getUsbId from "./lib/getUsbId";
 	import { settings } from "./lib/stores";
+	import { decodeMinervaIIPacket } from "./lib/decode";
 
 	let serialPort = null;
 	let usbDeviceInfo = null;
@@ -25,48 +26,39 @@
 	};
 
 	let numDataPoints = 0;
+	let numDataPointsWhileConnected = 0;
 	let timeWhenConnected = 1;
+
+	const logValues = {
+		kf_acceleration_mss: "acceleration",
+		kf_velocity_ms: "velocity",
+		kf_position_m: "position",
+	};
 
 	function updateDataFromSerialStream() {
 		let newData = data;
 		if (serialDataStream?.length > 0) {
-			while (serialDataStream.length > 0) {
+			while (serialDataStream?.length > 0) {
 				const line = serialDataStream.shift();
 				try {
-					const sensorValues = JSON.parse(line);
-					sensorValues.forEach((sensorValue, i) => {
-						if (!newData[`sensor${i}`]) {
-							newData[`sensor${i}`] = [];
+					console.log(line);
+					const decoded = decodeMinervaIIPacket(new Uint8Array(line).buffer);
+					console.log(decoded);
+					Object.keys(logValues).forEach((logValue) => {
+						if (!data[logValue]) {
+							data[logValue] = [];
 						}
-						newData[`sensor${i}`] = [...newData[`sensor${i}`], sensorValue];
+						data[logValue] = [...data[logValue], decoded[logValue]];
 					});
+					numDataPointsWhileConnected++;
 				} catch (error) {
-					// console.error("Serial parse error", error);
+					console.error("Serial parse error", error);
 				}
 			}
 		}
 		numDataPoints = Object.values(newData)[0]?.length;
 		// data = data.concat(newData);
-		if (serialPort || randomDataInterval)
-			requestAnimationFrame(updateDataFromSerialStream);
-	}
-
-	let randomDataInterval = null;
-	function generateRandomData() {
-		randomDataInterval = setInterval(() => {
-			serialDataStream.push(
-				JSON.stringify([
-					Math.random() * 10,
-					Math.random() * 10,
-					Math.random() * 10,
-					Math.random() * 10,
-					Math.random() * 10,
-					Math.random() * 10,
-				])
-			);
-		}, 5);
-		timeWhenConnected = Date.now();
-		requestAnimationFrame(updateDataFromSerialStream);
+		if (serialPort) requestAnimationFrame(updateDataFromSerialStream);
 	}
 
 	function initSerial() {
@@ -75,9 +67,10 @@
 			updateDataFromSerialStream();
 			window.sp = port;
 			console.log(serialPort);
-			await port.open({ baudRate: 115200 });
-			let buffer = "";
+			await port.open({ baudRate: parseInt($settings?.baudRate) || 115200 });
+			let buffer = [];
 			timeWhenConnected = Date.now();
+			numDataPointsWhileConnected = 0;
 			while (port.readable) {
 				const reader = port.readable.getReader();
 				try {
@@ -88,13 +81,26 @@
 							console.log("Read done");
 							break;
 						}
-						const rxString = new TextDecoder().decode(value);
-						buffer += rxString;
-						if (buffer.includes("\n")) {
-							const lines = buffer.split("\n");
-							serialDataStream.push(...lines.slice(0, lines.length - 1));
-							buffer = lines[lines.length - 1];
+						// console.log(value);
+						let toAdd = buffer;
+						// let string = new TextDecoder("utf-8").decode(value.slice(0, 2));
+						// console.log(string, value.slice(0, 2));
+						for (let i = 0; i < value.length; i++) {
+							// console.log(toAdd.length, toAdd.slice(-1), toAdd.slice(-2));
+							if (
+								toAdd.length >= 2 &&
+								toAdd.slice(-1) == 0x69 &&
+								toAdd.slice(-2, -1) == 0x68
+							) {
+								toAdd.unshift(toAdd.pop());
+								toAdd.unshift(toAdd.pop());
+								serialDataStream.push(toAdd);
+								// console.log(toAdd);
+								toAdd = [];
+							}
+							toAdd.push(value[i]);
 						}
+						buffer = toAdd;
 					}
 				} catch (error) {
 					console.error(error);
@@ -124,7 +130,7 @@
 		// 	});
 		// }, 5);
 		setInterval(() => {
-			console.log(serialDataStream, numDataPoints, timeWhenConnected);
+			// console.log(serialDataStream, numDataPoints, timeWhenConnected);
 		}, 1000);
 	});
 </script>
@@ -163,7 +169,7 @@
 		<p>
 			Data points: {numDataPoints} <br />
 			Capture Rate: {(
-				numDataPoints /
+				numDataPointsWhileConnected /
 				((Date.now() - timeWhenConnected) / 1000)
 			).toPrecision(3)} Hz
 		</p>
@@ -179,7 +185,12 @@
 		<button on:click={() => (randomDataMode = false)}>Stop LLRD mode</button>
 	</div>
 	<div class="graphs">
-		<LineChart {data} {randomDataMode} {numRandomSamplesPerFrame} />
+		<LineChart
+			{data}
+			{randomDataMode}
+			{numRandomSamplesPerFrame}
+			nameMap={logValues}
+		/>
 		<!-- <LineChart {data} />
 		<LineChart {data} />
 		<LineChart {data} /> -->

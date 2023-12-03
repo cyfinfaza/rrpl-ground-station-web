@@ -10,6 +10,7 @@
 	export let data = {};
 	export let randomDataMode = false;
 	export let numRandomSamplesPerFrame = 4;
+	export let nameMap = {};
 
 	let lineSeries = {};
 
@@ -29,7 +30,7 @@
 							// Optimize line series for progressively increasing X coordinates.
 							dataPattern: { pattern: "ProgressiveX" },
 						})
-						.setName(dataset);
+						.setName(nameMap[dataset] || dataset);
 					legendbox.add(lineSeries[dataset]);
 				}
 				lineSeries[dataset]
@@ -40,7 +41,7 @@
 							.map((y, i) => ({
 								x: i + lineSeries[dataset].getPointAmount(),
 								y,
-							}))
+							})),
 					);
 			});
 		}
@@ -86,7 +87,7 @@
 				new Array(num).fill(0).map((_, i) => ({
 					x: lineSeries[dataset].getPointAmount() + i,
 					y: Math.random() * 10,
-				}))
+				})),
 			);
 		}
 	}

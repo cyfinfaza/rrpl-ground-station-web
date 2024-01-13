@@ -7,8 +7,6 @@
 
 	let serialPort = null;
 	let usbDeviceInfo = null;
-	let randomDataMode = false;
-	let numRandomSamplesPerFrame = 4;
 
 	$: if (serialPort) {
 		const portInfo = serialPort.getInfo();
@@ -39,7 +37,7 @@
 				try {
 					// console.log(line);
 					const decoded = decodeMinervaIIPacket(new Uint8Array(line).buffer);
-					console.log(decoded);
+					// console.log(decoded);
 					Object.keys(logValues).forEach((logValue) => {
 						if (!data[logValue]) {
 							data[logValue] = [];
@@ -120,13 +118,9 @@
 	}
 
 	onMount(() => {
-		// setInterval(() => {
-		// 	Object.keys(data).forEach((d) => {
-		// 		data[d] = [...data[d], Math.random() * 10];
-		// 	});
-		// }, 5);
 		setInterval(() => {
 			// console.log(serialDataStream, numDataPoints, timeWhenConnected);
+			console.log(data);
 		}, 1000);
 	});
 </script>
@@ -169,27 +163,26 @@
 				((Date.now() - timeWhenConnected) / 1000)
 			).toPrecision(3)} Hz
 		</p>
-		<h3>Low-level random data generator</h3>
-		<p>
-			Random samples per frame: <input
-				type="number"
-				bind:value={numRandomSamplesPerFrame}
-				style="width: 100px;"
-			/>
-		</p>
-		<button on:click={() => (randomDataMode = true)}>Start LLRD mode</button>
-		<button on:click={() => (randomDataMode = false)}>Stop LLRD mode</button>
 	</div>
 	<div class="graphs">
 		<LineChart
 			{data}
-			{randomDataMode}
-			{numRandomSamplesPerFrame}
+			showJust="kf_acceleration_mss"
+			title="Acceleration"
 			nameMap={logValues}
 		/>
-		<!-- <LineChart {data} />
-		<LineChart {data} />
-		<LineChart {data} /> -->
+		<LineChart
+			{data}
+			showJust="kf_velocity_ms"
+			title="Velocity"
+			nameMap={logValues}
+		/>
+		<LineChart
+			{data}
+			showJust="kf_position_m"
+			title="Position"
+			nameMap={logValues}
+		/>
 	</div>
 </main>
 
@@ -199,17 +192,28 @@
 		height: 100vh;
 		display: grid;
 		grid-template-columns: 300px 1fr;
+		padding: var(--spacing);
+		gap: var(--spacing);
+		box-sizing: border-box;
 	}
 	.graphs {
 		display: grid;
-		// grid-template-columns: 1fr 1fr;
-		// grid-template-rows: 1fr 1fr;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 1fr 1fr;
+		gap: var(--spacing);
+		> :global(*) {
+			width: calc(100% - 4px);
+			height: calc(100% - 4px);
+			background: var(--graphs);
+			border: 2px solid var(--fg);
+			border-radius: 12px;
+			/* box-sizing: border-box !important; */
+		}
 	}
 
 	.controls {
 		display: flex;
 		flex-direction: column;
-		padding: 8px;
 		gap: 8px;
 		p,
 		h1,

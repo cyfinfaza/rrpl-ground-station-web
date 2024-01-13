@@ -19,11 +19,7 @@
 	let serialDataStream = [];
 	let stopReadingPlz = false;
 
-	let data = {
-		// set1: [1, 2, 3, 4],
-		// set2: [2, 3, 4, 5],
-		// set3: [3, 4, 5, 6],
-	};
+	let data = {};
 
 	let numDataPoints = 0;
 	let numDataPointsWhileConnected = 0;
@@ -41,7 +37,7 @@
 			while (serialDataStream?.length > 0) {
 				const line = serialDataStream.shift();
 				try {
-					console.log(line);
+					// console.log(line);
 					const decoded = decodeMinervaIIPacket(new Uint8Array(line).buffer);
 					console.log(decoded);
 					Object.keys(logValues).forEach((logValue) => {
@@ -88,9 +84,9 @@
 						for (let i = 0; i < value.length; i++) {
 							// console.log(toAdd.length, toAdd.slice(-1), toAdd.slice(-2));
 							if (
-								toAdd.length >= 2 &&
-								toAdd.slice(-1) == 0x69 &&
-								toAdd.slice(-2, -1) == 0x68
+								toAdd.length >= 107 &&
+								toAdd.slice(-1) == 0xbe &&
+								toAdd.slice(-2, -1) == 0xef
 							) {
 								toAdd.unshift(toAdd.pop());
 								toAdd.unshift(toAdd.pop());

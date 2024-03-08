@@ -23,6 +23,8 @@
 	let numDataPointsWhileConnected = 0;
 	let timeWhenConnected = 1;
 
+	let liveBinLogFileHandle = null;
+
 	const logValues = {
 		kf_acceleration_mss: "acceleration",
 		kf_velocity_ms: "velocity",
@@ -74,6 +76,13 @@
 						if (done) {
 							console.log("Read done");
 							break;
+						}
+						if (liveBinLogFileHandle) {
+							let writable = await liveBinLogFileHandle.createWritable({
+								keepExistingData: true,
+							});
+							await writable.write(value);
+							await writable.close();
 						}
 						// console.log(value);
 						let toAdd = buffer;
@@ -163,6 +172,39 @@
 				((Date.now() - timeWhenConnected) / 1000)
 			).toPrecision(3)} Hz
 		</p>
+		<h2>Live Binary Logger</h2>
+		<p>Stores all binary data directly to a file.</p>
+		<button
+			on:click={() => {
+				if (liveBinLogFileHandle) {
+					liveBinLogFileHandle = null;
+				} else {
+					window
+						.showSaveFilePicker({
+							suggestedName: Date.now() + ".bin",
+							types: [
+								{
+									description: "RRPL Ground Station Binary File",
+									accept: {
+										"application/octet-stream": [".bin"],
+									},
+								},
+							],
+						})
+						.then((fileHandle) => {
+							liveBinLogFileHandle = fileHandle;
+							console.log(fileHandle);
+						});
+				}
+			}}
+		>
+			{#if liveBinLogFileHandle}
+				<strong>Logging to: {liveBinLogFileHandle.name}</strong> <br />
+				<small>Click to stop logging</small>
+			{:else}
+				Select a file to write to
+			{/if}
+		</button>
 	</div>
 	<div class="graphs">
 		<LineChart

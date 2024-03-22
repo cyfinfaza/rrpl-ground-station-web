@@ -4,6 +4,7 @@
 	import getUsbId from "./lib/getUsbId";
 	import { settings } from "./lib/stores";
 	import { decodeMinervaIIPacket } from "./lib/decode";
+	import { Line } from "svelte-chartjs";
 
 	let serialPort = null;
 	let usbDeviceInfo = null;
@@ -27,6 +28,9 @@
 		kf_acceleration_mss: "acceleration",
 		kf_velocity_ms: "velocity",
 		kf_position_m: "position",
+		barometer_hMSL_m: "barometer",
+		acceleration_z_mss: "z_acceleration"
+
 	};
 
 	function updateDataFromSerialStream() {
@@ -183,6 +187,19 @@
 			title="Position"
 			nameMap={logValues}
 		/>
+		<LineChart
+			{data}
+			showJust="barometer_hMSL_m"
+			title="Barometric Altitude"
+			nameMap={logValues} 
+		/>
+		<LineChart
+			{data}
+			showJust="acceleration_z_mss"
+			title="Z Acceleration"
+			nameMap={logValues} 
+		/>
+		
 	</div>
 </main>
 
@@ -199,7 +216,7 @@
 	.graphs {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		grid-template-rows: 1fr 1fr;
+		grid-template-rows: 0.5fr 0.5fr 0.5fr;
 		gap: var(--spacing);
 		> :global(*) {
 			width: calc(100% - 4px);

@@ -10,7 +10,7 @@
 	export let data = {};
 	export let title = "";
 	export let nameMap = {};
-	export let showLegend = true;
+	export let showLegend = false;
 	export let showJust = null;
 
 	let lineSeries = {};

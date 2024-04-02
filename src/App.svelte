@@ -23,7 +23,7 @@
 	let numDataPoints = 0;
 	let numDataPointsWhileConnected = 0;
 	let timeWhenConnected = 1;
-
+	let isFirst = true;
 	const logValues = {
 		kf_acceleration_mss: "acceleration",
 		kf_velocity_ms: "velocity",
@@ -38,9 +38,14 @@
 		if (serialDataStream?.length > 0) {
 			while (serialDataStream?.length > 0) {
 				const line = serialDataStream.shift();
+				if(isFirst){
+					isFirst=false;
+					continue;
+				}
 				try {
 					// console.log(line);
 					const decoded = decodeMinervaIIPacket(new Uint8Array(line).buffer);
+
 					// console.log(decoded);
 					Object.keys(logValues).forEach((logValue) => {
 						if (!data[logValue]) {
@@ -167,6 +172,9 @@
 				((Date.now() - timeWhenConnected) / 1000)
 			).toPrecision(3)} Hz
 		</p>
+		
+		<img src='src/RRPLLogo.png'> 
+		
 	</div>
 	<div class="graphs">
 		<LineChart

@@ -18,7 +18,7 @@
 	let chartElem;
 	let chart;
 	let legendbox;
-
+	console.log(data)
 	function animFrame() {
 		Object.keys(
 			showJust && data[showJust] ? { [showJust]: data[showJust] } : data,

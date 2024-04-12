@@ -5,13 +5,14 @@
 	import { settings } from "./lib/stores";
 	import { decodeMinervaIIPacket } from "./lib/decode";
 	import { Line } from "svelte-chartjs";
+	import Battery from './components/Battery.svelte'
 
 	let serialPort = null;
 	let usbDeviceInfo = null;
-
+	
 	$: if (serialPort) {
 		const portInfo = serialPort.getInfo();
-		console.log(portInfo);
+		// console.log(portInfo);
 		usbDeviceInfo = getUsbId(portInfo.usbVendorId, portInfo.usbProductId);
 	}
 
@@ -23,13 +24,14 @@
 	let numDataPoints = 0;
 	let numDataPointsWhileConnected = 0;
 	let timeWhenConnected = 1;
-
+	let isFirst = true;
 	const logValues = {
 		kf_acceleration_mss: "acceleration",
 		kf_velocity_ms: "velocity",
 		kf_position_m: "position",
 		barometer_hMSL_m: "barometer",
-		acceleration_z_mss: "z_acceleration"
+		acceleration_z_mss: "z_acceleration",
+		main_voltage_v:"battery_charge"
 
 	};
 
@@ -38,9 +40,14 @@
 		if (serialDataStream?.length > 0) {
 			while (serialDataStream?.length > 0) {
 				const line = serialDataStream.shift();
+				if(isFirst){
+					isFirst=false;
+					continue;
+				}
 				try {
 					// console.log(line);
 					const decoded = decodeMinervaIIPacket(new Uint8Array(line).buffer);
+
 					// console.log(decoded);
 					Object.keys(logValues).forEach((logValue) => {
 						if (!data[logValue]) {
@@ -64,7 +71,7 @@
 			serialPort = port;
 			updateDataFromSerialStream();
 			window.sp = port;
-			console.log(serialPort);
+			// console.log(serialPort);
 			await port.open({ baudRate: parseInt($settings?.baudRate) || 115200 });
 			let buffer = [];
 			timeWhenConnected = Date.now();
@@ -76,7 +83,7 @@
 					while (!stopReadingPlz) {
 						const { value, done } = await reader.read();
 						if (done) {
-							console.log("Read done");
+							// console.log("Read done");
 							break;
 						}
 						// console.log(value);
@@ -111,10 +118,10 @@
 			}
 		});
 		navigator.serial.addEventListener("connect", (event) => {
-			console.log(event);
+			// console.log(event);
 		});
 		navigator.serial.addEventListener("disconnect", (event) => {
-			console.log(event);
+			// console.log(event);
 			if (event.port === serialPort) {
 				serialPort = null;
 			}
@@ -124,7 +131,7 @@
 	onMount(() => {
 		setInterval(() => {
 			// console.log(serialDataStream, numDataPoints, timeWhenConnected);
-			console.log(data);
+			// console.log(data);
 		}, 1000);
 	});
 </script>
@@ -160,6 +167,10 @@
 				style="width: 100px;"
 			/>
 		</p>
+		<Battery>
+			{data}
+		</Battery>
+		<!-- {console.log(data.main_voltage_v)} -->
 		<p>
 			Data points: {numDataPoints} <br />
 			Capture Rate: {(
@@ -167,6 +178,9 @@
 				((Date.now() - timeWhenConnected) / 1000)
 			).toPrecision(3)} Hz
 		</p>
+			<img src='src/RRPLLogo.png' class='RRPLimg'> 
+		
+		
 	</div>
 	<div class="graphs">
 		<LineChart
@@ -243,5 +257,8 @@
 		h3 {
 			margin-top: 4px;
 		}
+	}
+	.RRPLimg{
+		padding-top:25rem;
 	}
 </style>

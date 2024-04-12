@@ -10,7 +10,7 @@
 	export let data = {};
 	export let title = "";
 	export let nameMap = {};
-	export let showLegend = true;
+	export let showLegend = false;
 	export let showJust = null;
 
 	let lineSeries = {};
@@ -18,7 +18,7 @@
 	let chartElem;
 	let chart;
 	let legendbox;
-
+	console.log(data)
 	function animFrame() {
 		Object.keys(
 			showJust && data[showJust] ? { [showJust]: data[showJust] } : data,

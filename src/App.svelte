@@ -27,6 +27,7 @@
 	let batteryAvgChange = 0; //last second
 	let batteryDeltaArr = [];
 	let timeWhenConnected = 1;
+	let time = {"hours": "00", "minutes": "00", "seconds": "00", "milliseconds": "00"};
 	let timeElapsed=0;
 	let isFirst = true;
 	const logValues = {
@@ -44,6 +45,17 @@
 		difference = arr[arr.length - 1] - arr[0];
 		return Math.round((difference / (0.1*arr.length)) * 1000) / 1000 ;
 		
+	}
+
+	function convertTime(milliseconds) {
+		let seconds = Math.floor((milliseconds / 1000) % 60);
+		let minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
+		let hours = Math.floor((milliseconds / (1000 * 60 * 60)) % 24);
+		return {
+			hours: hours,
+			minutes: minutes,
+			seconds: seconds
+		};	
 	}
 
 	function updateDataFromSerialStream() {
@@ -75,6 +87,7 @@
 					}
 					batteryAvgChange = calculateAverageChange(batteryDeltaArr); 	
 					timeElapsed=Date.now()-timeWhenConnected;
+					time = convertTime(timeElapsed);
 
 				} catch (error) {
 					console.error("Serial parse error", error);
@@ -211,7 +224,7 @@
 			nameMap={logValues}
 		/>
 		<div class="stopwatch-holder">
-			<p>{timeElapsed}</p>
+			<p>{time.hours}:{time.minutes}:{time.seconds}.{time.milliseconds}</p>
 		</div>
 		<LineChart
 			{data}
@@ -242,6 +255,8 @@
 </main>
 
 <style lang="scss">
+	@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
+
 	main {
 		width: 100vw;
 		height: 100vh;
@@ -272,6 +287,7 @@
 		justify-content:center;
 		align-items:center;
 		font-size:2rem;
+		font-family: "Orbitron";
 	}
 	.controls {
 		display: flex;

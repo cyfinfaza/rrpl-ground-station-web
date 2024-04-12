@@ -5,7 +5,7 @@
 	import { settings } from "./lib/stores";
 	import { decodeMinervaIIPacket } from "./lib/decode";
 	import { Line } from "svelte-chartjs";
-	import Battery from './components/Battery.svelte'
+	// import Battery from './components/Battery.svelte'
 
 	let serialPort = null;
 	let usbDeviceInfo = null;
@@ -23,6 +23,10 @@
 
 	let numDataPoints = 0;
 	let numDataPointsWhileConnected = 0;
+	let batteryCharge = 0;
+	let batteryAvgChange = 0; //last second
+	let batteryDeltaArr = [];
+
 	let timeWhenConnected = 1;
 	let isFirst = true;
 	const logValues = {
@@ -34,6 +38,13 @@
 		main_voltage_v:"battery_charge"
 
 	};
+
+	function calculateAverageChange(arr) {
+		let difference = 0;
+		difference = arr[arr.length - 1] - arr[0];
+		return Math.round((difference / (0.1*arr.length)) * 1000) / 1000 ;
+		
+	}
 
 	function updateDataFromSerialStream() {
 		let newData = data;
@@ -56,6 +67,14 @@
 						data[logValue] = [...data[logValue], decoded[logValue]];
 					});
 					numDataPointsWhileConnected++;
+					batteryCharge = Math.round(100*data.main_voltage_v[data.main_voltage_v.length-1])/ 100;
+					batteryDeltaArr.push(data.main_voltage_v[data.main_voltage_v.length-1])
+					if(batteryDeltaArr.length > 10) {
+						batteryDeltaArr.shift();
+					}
+					batteryAvgChange = calculateAverageChange(batteryDeltaArr); 	
+					
+
 				} catch (error) {
 					console.error("Serial parse error", error);
 				}
@@ -131,7 +150,7 @@
 	onMount(() => {
 		setInterval(() => {
 			// console.log(serialDataStream, numDataPoints, timeWhenConnected);
-			// console.log(data);
+			//console.log(data.main_voltage_v);
 		}, 1000);
 	});
 </script>
@@ -167,9 +186,10 @@
 				style="width: 100px;"
 			/>
 		</p>
-		<Battery>
-			{data}
-		</Battery>
+		
+		<p>Battery Charge: {batteryCharge}<p>
+		<p>Battery Delta: {batteryAvgChange}</p>
+
 		<!-- {console.log(data.main_voltage_v)} -->
 		<p>
 			Data points: {numDataPoints} <br />

@@ -26,8 +26,8 @@
 	let batteryCharge = 0;
 	let batteryAvgChange = 0; //last second
 	let batteryDeltaArr = [];
-
 	let timeWhenConnected = 1;
+	let timeElapsed=0;
 	let isFirst = true;
 	const logValues = {
 		kf_acceleration_mss: "acceleration",
@@ -35,8 +35,8 @@
 		kf_position_m: "position",
 		barometer_hMSL_m: "barometer",
 		acceleration_z_mss: "z_acceleration",
-		main_voltage_v:"battery_charge"
-
+		main_voltage_v:"battery_charge",
+		time:"time_us"
 	};
 
 	function calculateAverageChange(arr) {
@@ -66,6 +66,7 @@
 						}
 						data[logValue] = [...data[logValue], decoded[logValue]];
 					});
+					//pwewse put this as a compotnent 
 					numDataPointsWhileConnected++;
 					batteryCharge = Math.round(100*data.main_voltage_v[data.main_voltage_v.length-1])/ 100;
 					batteryDeltaArr.push(data.main_voltage_v[data.main_voltage_v.length-1])
@@ -73,7 +74,7 @@
 						batteryDeltaArr.shift();
 					}
 					batteryAvgChange = calculateAverageChange(batteryDeltaArr); 	
-					
+					timeElapsed=Date.now()-timeWhenConnected;
 
 				} catch (error) {
 					console.error("Serial parse error", error);
@@ -202,13 +203,16 @@
 		
 		
 	</div>
-	<div class="graphs">
+	<div class="graphs stopwatch-holder">
 		<LineChart
 			{data}
 			showJust="kf_acceleration_mss"
 			title="Acceleration"
 			nameMap={logValues}
 		/>
+		<div class="stopwatch-holder">
+			<p>{timeElapsed}</p>
+		</div>
 		<LineChart
 			{data}
 			showJust="kf_velocity_ms"
@@ -261,7 +265,14 @@
 			/* box-sizing: border-box !important; */
 		}
 	}
-
+	.graphs .stopwatch-holder {
+		padding:0px;
+		margin:0px;
+		display:flex;
+		justify-content:center;
+		align-items:center;
+		font-size:2rem;
+	}
 	.controls {
 		display: flex;
 		flex-direction: column;

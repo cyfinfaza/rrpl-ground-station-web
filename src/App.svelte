@@ -21,13 +21,15 @@
 
 	let data = {};
 
+	let refreshRate=0;
 	let numDataPoints = 0;
 	let numDataPointsWhileConnected = 0;
 	let batteryCharge = 0;
 	let batteryAvgChange = 0; //last second
+	let timeDeltaArr=[];
 	let batteryDeltaArr = [];
 	let timeWhenConnected = 1;
-	let time = {"hours": "00", "minutes": "00", "seconds": "00", "milliseconds": "00"};
+	let time = {"hours": 0, "minutes": 0, "seconds": 0};
 	let timeElapsed=0;
 	let isFirst = true;
 	const logValues = {
@@ -39,7 +41,10 @@
 		main_voltage_v:"battery_charge",
 		time:"time_us"
 	};
-
+	function calcRefreshRate(arr){
+		let diff=arr[arr.length-1]-arr[0];
+		return diff;
+	}
 	function calculateAverageChange(arr) {
 		let difference = 0;
 		difference = arr[arr.length - 1] - arr[0];
@@ -54,7 +59,7 @@
 		return {
 			hours: hours,
 			minutes: minutes,
-			seconds: seconds
+			seconds: seconds,
 		};	
 	}
 
@@ -88,7 +93,11 @@
 					batteryAvgChange = calculateAverageChange(batteryDeltaArr); 	
 					timeElapsed=Date.now()-timeWhenConnected;
 					time = convertTime(timeElapsed);
-
+					timeDeltaArr.push(timeElapsed);
+					if(timeDeltaArr.length>2){
+						timeDeltaArr.shift();
+					}
+					refreshRate=calcRefreshRate(timeDeltaArr);
 				} catch (error) {
 					console.error("Serial parse error", error);
 				}
@@ -203,6 +212,7 @@
 		
 		<p>Battery Charge: {batteryCharge}<p>
 		<p>Battery Delta: {batteryAvgChange}</p>
+		<p>Refresh Rate: {refreshRate}</p>
 
 		<!-- {console.log(data.main_voltage_v)} -->
 		<p>
@@ -224,7 +234,7 @@
 			nameMap={logValues}
 		/>
 		<div class="stopwatch-holder">
-			<p>{time.hours}:{time.minutes}:{time.seconds}.{time.milliseconds}</p>
+			<p>{time.hours}:{time.minutes}:{time.seconds}</p>
 		</div>
 		<LineChart
 			{data}

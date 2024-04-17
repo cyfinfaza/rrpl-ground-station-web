@@ -18,6 +18,7 @@
     "@arction/lcjs": "^4.2.1",
     "@arction/lcjs-themes": "^2.1.0",
     "i": "^0.3.7",
+    "leaflet": "^1.9.4",
     "svelte-chartjs": "^3.1.2"
   }
 }

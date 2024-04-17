@@ -226,47 +226,54 @@
 		
 		
 	</div>
-	<div class="graphs stopwatch-holder">
-		<LineChart
-			{data}
-			showJust="kf_acceleration_mss"
-			title="Acceleration"
-			nameMap={logValues}
-		/>
-		<div class="stopwatch-holder">
-			<p>{time.hours}:{time.minutes}:{time.seconds}</p>
+	<div class="everything-holder">
+		<div class="graphs stopwatch-holder">
+			<LineChart
+				{data}
+				showJust="kf_acceleration_mss"
+				title="Acceleration"
+				nameMap={logValues}
+			/>
+			<div class="stopwatch-holder">
+				<p>{time.hours}:{time.minutes}:{time.seconds}</p>
+			</div>
+			<LineChart
+				{data}
+				showJust="kf_velocity_ms"
+				title="Velocity"
+				nameMap={logValues}
+			/>
+			<LineChart
+				{data}
+				showJust="kf_position_m"
+				title="Position"
+				nameMap={logValues}
+			/>
+			<LineChart
+				{data}
+				showJust="barometer_hMSL_m"
+				title="Barometric Altitude"
+				nameMap={logValues} 
+			/>
+			<LineChart
+				{data}
+				showJust="acceleration_z_mss"
+				title="Z Acceleration"
+				nameMap={logValues} 
+			/>
 		</div>
-		<LineChart
-			{data}
-			showJust="kf_velocity_ms"
-			title="Velocity"
-			nameMap={logValues}
-		/>
-		<LineChart
-			{data}
-			showJust="kf_position_m"
-			title="Position"
-			nameMap={logValues}
-		/>
-		<LineChart
-			{data}
-			showJust="barometer_hMSL_m"
-			title="Barometric Altitude"
-			nameMap={logValues} 
-		/>
-		<LineChart
-			{data}
-			showJust="acceleration_z_mss"
-			title="Z Acceleration"
-			nameMap={logValues} 
-		/>
-		
 	</div>
+	
 </main>
 
 <style lang="scss">
 	@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
 
+	.everything-holder{
+		height:95%;
+		width:100%;
+		overflow-y: scroll;
+	}
 	main {
 		width: 100vw;
 		height: 100vh;
@@ -281,6 +288,8 @@
 		grid-template-columns: 1fr 1fr;
 		grid-template-rows: 0.5fr 0.5fr 0.5fr;
 		gap: var(--spacing);
+		height:100%;
+		width:100%;
 		> :global(*) {
 			width: calc(100% - 4px);
 			height: calc(100% - 4px);

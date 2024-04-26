@@ -5,6 +5,7 @@
 	import { settings } from "./lib/stores";
 	import { decodeMinervaIIPacket } from "./lib/decode";
 	import { Line } from "svelte-chartjs";
+	import Gps from "./components/GPS.svelte";
 	// import Battery from './components/Battery.svelte'
 
 	let serialPort = null;
@@ -39,7 +40,9 @@
 		barometer_hMSL_m: "barometer",
 		acceleration_z_mss: "z_acceleration",
 		main_voltage_v:"battery_charge",
-		time:"time_us"
+		time:"time_us",
+		longitude:"longitude",
+		latitude:"latitude"
 	};
 	function calcRefreshRate(arr){
 		let diff=arr[arr.length-1]-arr[0];
@@ -261,7 +264,9 @@
 				title="Z Acceleration"
 				nameMap={logValues} 
 			/>
+			
 		</div>
+		<Gps/>
 	</div>
 	
 </main>

@@ -21,13 +21,16 @@
 
 	let data = {};
 
+	let refreshRate=0;
 	let numDataPoints = 0;
 	let numDataPointsWhileConnected = 0;
 	let batteryCharge = 0;
 	let batteryAvgChange = 0; //last second
+	let timeDeltaArr=[];
 	let batteryDeltaArr = [];
-
 	let timeWhenConnected = 1;
+	let time = {"hours": 0, "minutes": 0, "seconds": 0};
+	let timeElapsed=0;
 	let isFirst = true;
 	const logValues = {
 		kf_acceleration_mss: "acceleration",
@@ -35,15 +38,29 @@
 		kf_position_m: "position",
 		barometer_hMSL_m: "barometer",
 		acceleration_z_mss: "z_acceleration",
-		main_voltage_v:"battery_charge"
-
+		main_voltage_v:"battery_charge",
+		time:"time_us"
 	};
-
+	function calcRefreshRate(arr){
+		let diff=arr[arr.length-1]-arr[0];
+		return diff;
+	}
 	function calculateAverageChange(arr) {
 		let difference = 0;
 		difference = arr[arr.length - 1] - arr[0];
 		return Math.round((difference / (0.1*arr.length)) * 1000) / 1000 ;
 		
+	}
+
+	function convertTime(milliseconds) {
+		let seconds = Math.floor((milliseconds / 1000) % 60);
+		let minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
+		let hours = Math.floor((milliseconds / (1000 * 60 * 60)) % 24);
+		return {
+			hours: hours,
+			minutes: minutes,
+			seconds: seconds,
+		};	
 	}
 
 	function updateDataFromSerialStream() {
@@ -66,6 +83,7 @@
 						}
 						data[logValue] = [...data[logValue], decoded[logValue]];
 					});
+					//pwewse put this as a compotnent 
 					numDataPointsWhileConnected++;
 					batteryCharge = Math.round(100*data.main_voltage_v[data.main_voltage_v.length-1])/ 100;
 					batteryDeltaArr.push(data.main_voltage_v[data.main_voltage_v.length-1])
@@ -73,8 +91,13 @@
 						batteryDeltaArr.shift();
 					}
 					batteryAvgChange = calculateAverageChange(batteryDeltaArr); 	
-					
-
+					timeElapsed=Date.now()-timeWhenConnected;
+					time = convertTime(timeElapsed);
+					timeDeltaArr.push(timeElapsed);
+					if(timeDeltaArr.length>2){
+						timeDeltaArr.shift();
+					}
+					refreshRate=calcRefreshRate(timeDeltaArr);
 				} catch (error) {
 					console.error("Serial parse error", error);
 				}
@@ -189,6 +212,7 @@
 		
 		<p>Battery Charge: {batteryCharge}<p>
 		<p>Battery Delta: {batteryAvgChange}</p>
+		<p>Refresh Rate: {refreshRate}</p>
 
 		<!-- {console.log(data.main_voltage_v)} -->
 		<p>
@@ -202,13 +226,16 @@
 		
 		
 	</div>
-	<div class="graphs">
+	<div class="graphs stopwatch-holder">
 		<LineChart
 			{data}
 			showJust="kf_acceleration_mss"
 			title="Acceleration"
 			nameMap={logValues}
 		/>
+		<div class="stopwatch-holder">
+			<p>{time.hours}:{time.minutes}:{time.seconds}</p>
+		</div>
 		<LineChart
 			{data}
 			showJust="kf_velocity_ms"
@@ -238,6 +265,8 @@
 </main>
 
 <style lang="scss">
+	@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
+
 	main {
 		width: 100vw;
 		height: 100vh;
@@ -261,7 +290,15 @@
 			/* box-sizing: border-box !important; */
 		}
 	}
-
+	.graphs .stopwatch-holder {
+		padding:0px;
+		margin:0px;
+		display:flex;
+		justify-content:center;
+		align-items:center;
+		font-size:2rem;
+		font-family: "Orbitron";
+	}
 	.controls {
 		display: flex;
 		flex-direction: column;

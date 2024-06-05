@@ -1,58 +1,64 @@
 
 <script>
     import * as L from "leaflet";
-
+    import * as tiles from "../tiles/tiles.json"
     import { onMount } from "svelte";
+    import GeoRasterLayer from "georaster-layer-for-leaflet";
+    import parseGeoraster from "georaster";
 
-    let data = {};
-    let map;
-    let marker;
-    let mapElem;
+
+    var data = {};
+    var map
+    var osm;
+    var sat;
+    var marker;
+    var mapElem;
 
     function updatePosition() {
         let lat = data.latitude[data.latitude.length-1];
         let lng = data.longitude[data.longitude.length-1];
-        let latlngPnt = map.project([lat, lng], map.getMaxZoom() - 1);
-        marker.LatLng(latlngPnt);
+        let latLng = L.latLng(lat, lng);
+        marker.setLatLng(latLng);
     }
     
     onMount(() => {
-        // map = L.map(mapElem);
-        // L.geoJSON(usa, {
-        //     // maxZoom: 1,
-        //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        // }).addTo(map);
-        // marker = L.marker([0,0]).addTo(map)
+
         map = L.map(mapElem, {
-            minZoom: 1,
-            maxZoom: 3,
-            center: [0, 0],
-            zoom: 1,
-            crs: L.CRS.Simple,
-        });
-        var w = 1500;
-        var h = 1000;
-        var url = 'src/engineering.png';
-        var southWest = map.unproject([ 0, h], map.getMaxZoom()-1);
-        var northEast = map.unproject([ w, 0], map.getMaxZoom()-1);
-        var bounds = new L.LatLngBounds( southWest, northEast);
-    //    var bounds = [[0, 0], [1000, 1000]];
-        L.imageOverlay( url, bounds, {
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            minZoom: tiles["minzoom"],
+            maxZoom: tiles["maxzoom"],
+            center: [tiles.center[1], tiles["center"][0]],
+            zoom: tiles["center"][2],
+            maxBounds: [
+                [tiles["bounds"][1], tiles["bounds"][0]],
+                [tiles["bounds"][3], tiles["bounds"][2]]
+            ],
+            
+        })
 
-        }).addTo(map);
-        
+        var overlayControl = L.control.layers().addTo(map);
+        let url_to_geotiff_file = "src/LAADS_[@-106.7,33.3,8.9z].tif";
 
-        map.setMaxBounds(bounds);
-        let latlngPnt = map.project([40.52, -74.46]);
-        let bnds = map.getBounds();
-        
-        marker = L.marker(map.unproject([500, 500], map.getMaxZoom() - 1)).addTo(map)
-        //148.92, 81.04
-        // map.fitBounds(bounds)
-        // console.log(map.getBounds())
-
-        updatePosition();
+        fetch(url_to_geotiff_file)
+        .then(response => response.arrayBuffer())
+            .then(arrayBuffer => {
+                parseGeoraster(arrayBuffer).then(georaster => {
+                console.log("georaster:", georaster);
+                    sat = new GeoRasterLayer({
+                        georaster: georaster,
+                        opacity: 0.7,
+                        resolution: 256 // optional parameter for adjusting display resolution
+                    })
+                    osm = L.tileLayer('src/tiles/{z}/{x}/{y}.png', {
+                                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            }).addTo(map);
+                            
+                    overlayControl.addBaseLayer(sat, "Sattelite");
+                    overlayControl.addBaseLayer(osm, "OSM");
+            })
+           
+        }); 
+        marker = L.marker([tiles["center"][1], tiles["center"][0]]).addTo(map);
+        //updatePosition();
     })
 
 

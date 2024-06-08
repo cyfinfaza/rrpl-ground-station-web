@@ -41,8 +41,8 @@
 		acceleration_z_mss: "z_acceleration",
 		main_voltage_v:"battery_charge",
 		time:"time_us",
-		longitude:"longitude",
-		latitude:"latitude"
+		longitude_degrees:"longitude",
+		latitude_degrees:"latitude"
 	};
 	function calcRefreshRate(arr){
 		let diff=arr[arr.length-1]-arr[0];
@@ -176,7 +176,8 @@
 	onMount(() => {
 		setInterval(() => {
 			// console.log(serialDataStream, numDataPoints, timeWhenConnected);
-			//console.log(data.main_voltage_v);
+			//console.log(data.longitude_degrees);
+			//console.log(data.time)
 		}, 1000);
 	});
 </script>
@@ -266,7 +267,9 @@
 			/>
 			
 		</div>
-		<Gps/>
+		<Gps 
+			{data}
+		/>
 	</div>
 	
 </main>

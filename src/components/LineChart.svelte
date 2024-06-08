@@ -47,6 +47,7 @@
 	}
 
 	onMount(() => {
+		// console.log('hi')
 		chart = lightningChart()
 			.ChartXY({ container: chartElem, theme: disableThemeEffects(basicTheme) })
 			.setTitle(title);

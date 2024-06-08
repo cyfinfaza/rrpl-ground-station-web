@@ -2,12 +2,13 @@
 <script>
     import * as L from "leaflet";
     import * as tiles from "../tiles/tiles.json"
-    import { onMount } from "svelte";
+    import { onMount, afterUpdate } from "svelte";
     import GeoRasterLayer from "georaster-layer-for-leaflet";
     import parseGeoraster from "georaster";
 
 
-    var data = {};
+    export let data = {};
+    
     var map
     var osm;
     var sat;
@@ -15,8 +16,8 @@
     var mapElem;
 
     function updatePosition() {
-        let lat = data.latitude[data.latitude.length-1];
-        let lng = data.longitude[data.longitude.length-1];
+        let lat = data.latitude_degrees[data.latitude_degrees.length-1];
+        let lng = data.longitude_degrees[data.longitude_degrees.length-1];
         let latLng = L.latLng(lat, lng);
         marker.setLatLng(latLng);
     }
@@ -36,7 +37,7 @@
         })
 
         var overlayControl = L.control.layers().addTo(map);
-        let url_to_geotiff_file = "src/LAADS_[@-106.7,33.3,8.9z].tif";
+        let url_to_geotiff_file = "src/LAADS_[@-74.5,40.5,14.0z].tif";
 
         fetch(url_to_geotiff_file)
         .then(response => response.arrayBuffer())
@@ -56,9 +57,15 @@
                     overlayControl.addBaseLayer(osm, "OSM");
             })
            
-        }); 
+        });
         marker = L.marker([tiles["center"][1], tiles["center"][0]]).addTo(map);
-        //updatePosition();
+        
+    })
+
+    afterUpdate(() => {
+
+        updatePosition();
+
     })
 
 

@@ -17,7 +17,11 @@
   "dependencies": {
     "@arction/lcjs": "^4.2.1",
     "@arction/lcjs-themes": "^2.1.0",
+    "georaster": "^1.6.0",
+    "georaster-layer-for-leaflet": "^3.10.0",
     "i": "^0.3.7",
-    "svelte-chartjs": "^3.1.2"
+    "leaflet": "^1.9.4",
+    "svelte-chartjs": "^3.1.2",
+    "svelte-maplibre": "^0.8.5"
   }
 }

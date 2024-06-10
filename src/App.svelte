@@ -13,7 +13,8 @@
 	let usbDeviceInfo = null;
 	let csvData = "";
 	let first = true;
-	let dataLogInterval = 5;
+	$: dataLogInterval = 5;
+	let interval;
 	
 	$: if (serialPort) {
 		const portInfo = serialPort.getInfo();
@@ -48,6 +49,27 @@
 		longitude_degrees:"longitude",
 		latitude_degrees:"latitude"
 	};
+
+	function startDataLogInterval(time) {
+		if(interval) {
+			clearInterval(interval);
+		}
+		interval = setInterval(()=> {
+			if(Object.keys(data).length != 0) {
+				if(!first) {
+				let tempcsv = csvGenerator(data)
+				tempcsv = tempcsv.substring(tempcsv.indexOf("\n") + 1)
+				csvData += tempcsv;
+				}
+				else{ 
+					csvData += csvGenerator(data);
+					first = false;
+				}
+			}
+
+		}, time*1000);
+	}
+
 	function calcRefreshRate(arr){
 		let diff=arr[arr.length-1]-arr[0];
 		return diff;
@@ -191,21 +213,17 @@
 	}
 
 	onMount(() => {
-		setInterval(() => {
-			if(Object.keys(data).length != 0) {
-				if(!first) {
-				let tempcsv = csvGenerator(data)
-				tempcsv = tempcsv.substring(tempcsv.indexOf("\n") + 1)
-				csvData += tempcsv;
-				}
-				else{ 
-					csvData += csvGenerator(data);
-					first = false;
-				}
-			}
-			console.log(csvData)
-		}, dataLogInterval*1000);
+		startDataLogInterval(dataLogInterval);
+		
+		return () => {
+			clearInterval(interval);
+		}
 	});
+
+
+	$: {
+		startDataLogInterval(dataLogInterval);
+	}
 </script>
 
 <main>
@@ -238,6 +256,7 @@
 			Data Log Interval (s): <input 
 					type="number"
 					bind:value={dataLogInterval}
+					min="1"
 					style="width: 100px;"
 			
 			/>

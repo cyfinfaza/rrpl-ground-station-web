@@ -29,6 +29,8 @@
 	let batteryAvgChange = 0; //last second
 	let timeDeltaArr=[];
 	let batteryDeltaArr = [];
+	let longitude = 0; 
+	let latitude = 0; 
 	let timeWhenConnected = 1;
 	let time = {"hours": 0, "minutes": 0, "seconds": 0};
 	let timeElapsed=0;
@@ -93,6 +95,8 @@
 					if(batteryDeltaArr.length > 10) {
 						batteryDeltaArr.shift();
 					}
+					latitude = data.latitude_degrees[data.latitude_degrees.length-1]
+					longitude = data.longitude_degrees[data.longitude_degrees.length-1]
 					batteryAvgChange = calculateAverageChange(batteryDeltaArr); 	
 					timeElapsed=Date.now()-timeWhenConnected;
 					time = convertTime(timeElapsed);
@@ -217,6 +221,8 @@
 		<p>Battery Charge: {batteryCharge}<p>
 		<p>Battery Delta: {batteryAvgChange}</p>
 		<p>Refresh Rate: {refreshRate}</p>
+		<p>latitude: {latitude}</p>
+		<p>longitude: {longitude}</p>
 
 		<!-- {console.log(data.main_voltage_v)} -->
 		<p>

@@ -43,7 +43,7 @@
         .then(response => response.arrayBuffer())
             .then(arrayBuffer => {
                 parseGeoraster(arrayBuffer).then(georaster => {
-                console.log("georaster:", georaster);
+                //console.log("georaster:", georaster);
                     sat = new GeoRasterLayer({
                         georaster: georaster,
                         opacity: 0.7,
@@ -63,8 +63,9 @@
     })
 
     afterUpdate(() => {
-
-        updatePosition();
+        if(Object.keys(data).length != 0) {
+            updatePosition();
+        }
 
     })
 

@@ -6,10 +6,15 @@
 	import { decodeMinervaIIPacket } from "./lib/decode";
 	import { Line } from "svelte-chartjs";
 	import Gps from "./components/GPS.svelte";
+	import { csvGenerator } from "./lib/csvGenerator";
 	// import Battery from './components/Battery.svelte'
 
 	let serialPort = null;
 	let usbDeviceInfo = null;
+	let csvData = "";
+	let first = true;
+	$: dataLogInterval = 5;
+	let interval;
 	
 	$: if (serialPort) {
 		const portInfo = serialPort.getInfo();
@@ -42,10 +47,31 @@
 		barometer_hMSL_m: "barometer",
 		acceleration_z_mss: "z_acceleration",
 		main_voltage_v:"battery_charge",
-		time:"time_us",
+		time_us:"time",
 		longitude_degrees:"longitude",
 		latitude_degrees:"latitude"
 	};
+
+	function startDataLogInterval(time) {
+		if(interval) {
+			clearInterval(interval);
+		}
+		interval = setInterval(()=> {
+			if(Object.keys(data).length != 0) {
+				if(!first) {
+				let tempcsv = csvGenerator(data)
+				tempcsv = tempcsv.substring(tempcsv.indexOf("\n") + 1)
+				csvData += tempcsv;
+				}
+				else{ 
+					csvData += csvGenerator(data);
+					first = false;
+				}
+			}
+
+		}, time*1000);
+	}
+
 	function calcRefreshRate(arr){
 		let diff=arr[arr.length-1]-arr[0];
 		return diff;
@@ -177,13 +203,31 @@
 		});
 	}
 
+	function downloadCSV() {
+		const csvContent = csvData;
+		const blob = new Blob([csvContent], { type: "text/csv" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = "data.csv";
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
+
 	onMount(() => {
-		setInterval(() => {
-			// console.log(serialDataStream, numDataPoints, timeWhenConnected);
-			//console.log(data.longitude_degrees);
-			//console.log(data.time)
-		}, 1000);
+		startDataLogInterval(dataLogInterval);
+		
+		return () => {
+			clearInterval(interval);
+		}
 	});
+
+
+	$: {
+		startDataLogInterval(dataLogInterval);
+	}
 </script>
 
 <main>
@@ -209,6 +253,19 @@
 				}}>Disconnect</button
 			>
 		{/if}
+		<button on:click={downloadCSV}>
+			Download CSV
+		</button>
+		<p>
+			Data Log Interval (s): <input 
+					type="number"
+					bind:value={dataLogInterval}
+					min="1"
+					style="width: 100px;"
+			
+			/>
+			
+		</p>
 		<p>
 			Baud rate: <input
 				type="number"

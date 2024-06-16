@@ -5,13 +5,20 @@
 	import { settings } from "./lib/stores";
 	import { decodeMinervaIIPacket } from "./lib/decode";
 	import { Line } from "svelte-chartjs";
+	import Gps from "./components/GPS.svelte";
+	import { csvGenerator } from "./lib/csvGenerator";
+	// import Battery from './components/Battery.svelte'
 
 	let serialPort = null;
 	let usbDeviceInfo = null;
-
+	let csvData = "";
+	let first = true;
+	$: dataLogInterval = 5;
+	let interval;
+	
 	$: if (serialPort) {
 		const portInfo = serialPort.getInfo();
-		console.log(portInfo);
+		// console.log(portInfo);
 		usbDeviceInfo = getUsbId(portInfo.usbVendorId, portInfo.usbProductId);
 	}
 
@@ -20,27 +27,106 @@
 
 	let data = {};
 
+	let refreshRate=0;
 	let numDataPoints = 0;
 	let numDataPointsWhileConnected = 0;
+	let batteryCharge = 0;
+	let batteryAvgChange = 0; //last second
+	let timeDeltaArr=[];
+	let batteryDeltaArr = [];
+	let longitude = 0; 
+	let latitude = 0; 
 	let timeWhenConnected = 1;
-
+	let time = {"hours": 0, "minutes": 0, "seconds": 0};
+	let timeElapsed=0;
+	let isFirst = true;
 	const logValues = {
-		kf_acceleration_mss: "acceleration",
-		kf_velocity_ms: "velocity",
-		kf_position_m: "position",
-		barometer_hMSL_m: "barometer",
-		acceleration_z_mss: "z_acceleration"
-
+		magic: "magic",
+        status: "status",
+        time_us:"time",
+        main_voltage_v:"battery_charge",
+        pyro_voltage_v: "pyto_voltage_v",
+        numSatellites: "sattelites",
+        gpsFixType: "gpsFixType",
+        latitude_degrees:"latitude",
+        longitude_degrees:"longitude",
+        gps_hMSL_m: "gps_hMSL_m",
+        barometer_hMSL_m: "barometer",
+        temperature_c: "temperature",
+        acceleration_x_mss: "x_acceleration",
+        acceleration_y_mss: "y_acceleration",
+        acceleration_z_mss: "z_acceleration",
+        angular_velocity_x_rads: "angular_velocity_x",
+        angular_velocity_y_rads: "angular_velocity_y",
+        angular_velocity_z_rads: "angular_velocity_z",
+        gauss_x: "gauss_x",
+        gauss_y: "gauss_y",
+        gauss_z: "gauss_z",
+        kf_acceleration_mss: "acceleration",
+        kf_velocity_ms: "velocity",
+        kf_position_m: "position",    
+        w: "w",
+        x: "x",
+        y: "y",
+        z: "z",
+        checksum: "checksum"
 	};
+
+	function startDataLogInterval(time) {
+		if(interval) {
+			clearInterval(interval);
+		}
+		interval = setInterval(()=> {
+			if(Object.keys(data).length != 0) {
+				if(!first) {
+				let tempcsv = csvGenerator(data)
+				tempcsv = tempcsv.substring(tempcsv.indexOf("\n") + 1)
+				csvData += tempcsv;
+				}
+				else{ 
+					csvData += csvGenerator(data);
+					first = false;
+				}
+			}
+
+		}, time*1000);
+	}
+
+	function calcRefreshRate(arr){
+		let diff=arr[arr.length-1]-arr[0];
+		return diff;
+	}
+	function calculateAverageChange(arr) {
+		let difference = 0;
+		difference = arr[arr.length - 1] - arr[0];
+		return Math.round((difference / (0.1*arr.length)) * 1000) / 1000 ;
+		
+	}
+
+	function convertTime(milliseconds) {
+		let seconds = Math.floor((milliseconds / 1000) % 60);
+		let minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
+		let hours = Math.floor((milliseconds / (1000 * 60 * 60)) % 24);
+		return {
+			hours: hours,
+			minutes: minutes,
+			seconds: seconds,
+		};	
+	}
 
 	function updateDataFromSerialStream() {
 		let newData = data;
 		if (serialDataStream?.length > 0) {
 			while (serialDataStream?.length > 0) {
 				const line = serialDataStream.shift();
+				if(isFirst){
+					isFirst=false;
+					continue;
+				}
 				try {
 					// console.log(line);
 					const decoded = decodeMinervaIIPacket(new Uint8Array(line).buffer);
+
 					// console.log(decoded);
 					Object.keys(logValues).forEach((logValue) => {
 						if (!data[logValue]) {
@@ -48,7 +134,23 @@
 						}
 						data[logValue] = [...data[logValue], decoded[logValue]];
 					});
+					//pwewse put this as a compotnent 
 					numDataPointsWhileConnected++;
+					batteryCharge = Math.round(100*data.main_voltage_v[data.main_voltage_v.length-1])/ 100;
+					batteryDeltaArr.push(data.main_voltage_v[data.main_voltage_v.length-1])
+					if(batteryDeltaArr.length > 10) {
+						batteryDeltaArr.shift();
+					}
+					latitude = data.latitude_degrees[data.latitude_degrees.length-1]
+					longitude = data.longitude_degrees[data.longitude_degrees.length-1]
+					batteryAvgChange = calculateAverageChange(batteryDeltaArr); 	
+					timeElapsed=Date.now()-timeWhenConnected;
+					time = convertTime(timeElapsed);
+					timeDeltaArr.push(timeElapsed);
+					if(timeDeltaArr.length>2){
+						timeDeltaArr.shift();
+					}
+					refreshRate=calcRefreshRate(timeDeltaArr);
 				} catch (error) {
 					console.error("Serial parse error", error);
 				}
@@ -64,7 +166,7 @@
 			serialPort = port;
 			updateDataFromSerialStream();
 			window.sp = port;
-			console.log(serialPort);
+			// console.log(serialPort);
 			await port.open({ baudRate: parseInt($settings?.baudRate) || 115200 });
 			let buffer = [];
 			timeWhenConnected = Date.now();
@@ -76,7 +178,7 @@
 					while (!stopReadingPlz) {
 						const { value, done } = await reader.read();
 						if (done) {
-							console.log("Read done");
+							// console.log("Read done");
 							break;
 						}
 						// console.log(value);
@@ -111,22 +213,41 @@
 			}
 		});
 		navigator.serial.addEventListener("connect", (event) => {
-			console.log(event);
+			// console.log(event);
 		});
 		navigator.serial.addEventListener("disconnect", (event) => {
-			console.log(event);
+			// console.log(event);
 			if (event.port === serialPort) {
 				serialPort = null;
 			}
 		});
 	}
 
+	function downloadCSV() {
+		const csvContent = csvData;
+		const blob = new Blob([csvContent], { type: "text/csv" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = "data.csv";
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
+
 	onMount(() => {
-		setInterval(() => {
-			// console.log(serialDataStream, numDataPoints, timeWhenConnected);
-			console.log(data);
-		}, 1000);
+		startDataLogInterval(dataLogInterval);
+		
+		return () => {
+			clearInterval(interval);
+		}
 	});
+
+
+	$: {
+		startDataLogInterval(dataLogInterval);
+	}
 </script>
 
 <main>
@@ -152,6 +273,19 @@
 				}}>Disconnect</button
 			>
 		{/if}
+		<button on:click={downloadCSV}>
+			Download CSV
+		</button>
+		<p>
+			Data Log Interval (s): <input 
+					type="number"
+					bind:value={dataLogInterval}
+					min="1"
+					style="width: 100px;"
+			
+			/>
+			
+		</p>
 		<p>
 			Baud rate: <input
 				type="number"
@@ -160,6 +294,14 @@
 				style="width: 100px;"
 			/>
 		</p>
+		
+		<p>Battery Charge: {batteryCharge}<p>
+		<p>Battery Delta: {batteryAvgChange}</p>
+		<p>Refresh Rate: {refreshRate}</p>
+		<p>latitude: {latitude}</p>
+		<p>longitude: {longitude}</p>
+
+		<!-- {console.log(data.main_voltage_v)} -->
 		<p>
 			Data points: {numDataPoints} <br />
 			Capture Rate: {(
@@ -167,43 +309,62 @@
 				((Date.now() - timeWhenConnected) / 1000)
 			).toPrecision(3)} Hz
 		</p>
-	</div>
-	<div class="graphs">
-		<LineChart
-			{data}
-			showJust="kf_acceleration_mss"
-			title="Acceleration"
-			nameMap={logValues}
-		/>
-		<LineChart
-			{data}
-			showJust="kf_velocity_ms"
-			title="Velocity"
-			nameMap={logValues}
-		/>
-		<LineChart
-			{data}
-			showJust="kf_position_m"
-			title="Position"
-			nameMap={logValues}
-		/>
-		<LineChart
-			{data}
-			showJust="barometer_hMSL_m"
-			title="Barometric Altitude"
-			nameMap={logValues} 
-		/>
-		<LineChart
-			{data}
-			showJust="acceleration_z_mss"
-			title="Z Acceleration"
-			nameMap={logValues} 
-		/>
+			<img src='src/RRPLLogo.png' class='RRPLimg'> 
+		
 		
 	</div>
+	<div class="everything-holder">
+		<div class="graphs stopwatch-holder">
+			<LineChart
+				{data}
+				showJust="kf_acceleration_mss"
+				title="Acceleration"
+				nameMap={logValues}
+			/>
+			<div class="stopwatch-holder">
+				<p>{time.hours}:{time.minutes}:{time.seconds}</p>
+			</div>
+			<LineChart
+				{data}
+				showJust="kf_velocity_ms"
+				title="Velocity"
+				nameMap={logValues}
+			/>
+			<LineChart
+				{data}
+				showJust="kf_position_m"
+				title="Position"
+				nameMap={logValues}
+			/>
+			<LineChart
+				{data}
+				showJust="barometer_hMSL_m"
+				title="Barometric Altitude"
+				nameMap={logValues} 
+			/>
+			<LineChart
+				{data}
+				showJust="acceleration_z_mss"
+				title="Z Acceleration"
+				nameMap={logValues} 
+			/>
+			
+		</div>
+		<Gps 
+			{data}
+		/>
+	</div>
+	
 </main>
 
 <style lang="scss">
+	@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
+
+	.everything-holder{
+		height:95%;
+		width:100%;
+		overflow-y: scroll;
+	}
 	main {
 		width: 100vw;
 		height: 100vh;
@@ -218,6 +379,8 @@
 		grid-template-columns: 1fr 1fr;
 		grid-template-rows: 0.5fr 0.5fr 0.5fr;
 		gap: var(--spacing);
+		height:100%;
+		width:100%;
 		> :global(*) {
 			width: calc(100% - 4px);
 			height: calc(100% - 4px);
@@ -227,7 +390,15 @@
 			/* box-sizing: border-box !important; */
 		}
 	}
-
+	.graphs .stopwatch-holder {
+		padding:0px;
+		margin:0px;
+		display:flex;
+		justify-content:center;
+		align-items:center;
+		font-size:2rem;
+		font-family: "Orbitron";
+	}
 	.controls {
 		display: flex;
 		flex-direction: column;
@@ -243,5 +414,8 @@
 		h3 {
 			margin-top: 4px;
 		}
+	}
+	.RRPLimg{
+		padding-top:25rem;
 	}
 </style>

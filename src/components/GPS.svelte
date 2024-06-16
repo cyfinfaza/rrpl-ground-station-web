@@ -37,7 +37,7 @@
         })
 
         var overlayControl = L.control.layers().addTo(map);
-        let url_to_geotiff_file = "src/LAADS_[@-74.5,40.5,14.0z].tif";
+        let url_to_geotiff_file = "src/LAADS_casa.tif";
 
         fetch(url_to_geotiff_file)
         .then(response => response.arrayBuffer())

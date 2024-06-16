@@ -7,7 +7,6 @@
 	import { Line } from "svelte-chartjs";
 	import Gps from "./components/GPS.svelte";
 	import { csvGenerator } from "./lib/csvGenerator";
-	// import Battery from './components/Battery.svelte'
 
 	let serialPort = null;
 	let usbDeviceInfo = null;
@@ -41,35 +40,35 @@
 	let timeElapsed=0;
 	let isFirst = true;
 	const logValues = {
-		magic: "magic",
-        status: "status",
-        time_us:"time",
-        main_voltage_v:"battery_charge",
-        pyro_voltage_v: "pyto_voltage_v",
-        numSatellites: "sattelites",
-        gpsFixType: "gpsFixType",
-        latitude_degrees:"latitude",
-        longitude_degrees:"longitude",
-        gps_hMSL_m: "gps_hMSL_m",
-        barometer_hMSL_m: "barometer",
-        temperature_c: "temperature",
-        acceleration_x_mss: "x_acceleration",
-        acceleration_y_mss: "y_acceleration",
-        acceleration_z_mss: "z_acceleration",
-        angular_velocity_x_rads: "angular_velocity_x",
-        angular_velocity_y_rads: "angular_velocity_y",
-        angular_velocity_z_rads: "angular_velocity_z",
-        gauss_x: "gauss_x",
-        gauss_y: "gauss_y",
-        gauss_z: "gauss_z",
-        kf_acceleration_mss: "acceleration",
-        kf_velocity_ms: "velocity",
-        kf_position_m: "position",    
-        w: "w",
-        x: "x",
-        y: "y",
-        z: "z",
-        checksum: "checksum"
+    magic: "magic",
+    status: "status",
+    time_us:"time",
+    main_voltage_v:"battery_charge",
+    pyro_voltage_v: "pyto_voltage_v",
+    numSatellites: "sattelites",
+    gpsFixType: "gpsFixType",
+    latitude_degrees:"latitude",
+    longitude_degrees:"longitude",
+    gps_hMSL_m: "gps_hMSL_m",
+    barometer_hMSL_m: "barometer",
+    temperature_c: "temperature",
+    acceleration_x_mss: "x_acceleration",
+    acceleration_y_mss: "y_acceleration",
+    acceleration_z_mss: "z_acceleration",
+    angular_velocity_x_rads: "angular_velocity_x",
+    angular_velocity_y_rads: "angular_velocity_y",
+    angular_velocity_z_rads: "angular_velocity_z",
+    gauss_x: "gauss_x",
+    gauss_y: "gauss_y",
+    gauss_z: "gauss_z",
+    kf_acceleration_mss: "acceleration",
+    kf_velocity_ms: "velocity",
+    kf_position_m: "position",    
+    w: "w",
+    x: "x",
+    y: "y",
+    z: "z",
+    checksum: "checksum"
 	};
 
 	function startDataLogInterval(time) {
@@ -223,6 +222,23 @@
 		});
 	}
 
+	async function fire() {
+		try {
+			const textEncoder = new TextEncoderStream();
+			const writableStreamClosed = textEncoder.readable.pipeTo(serialPort.writable);
+			const writer = textEncoder.writable.getWriter();
+			await writer.write("FIRE");
+			
+			writer.releaseLock()
+
+			await writableStreamClosed;
+
+			console.log("Data sent")
+		} catch(error) {
+			console.log(error);
+		}
+	}
+
 	function downloadCSV() {
 		const csvContent = csvData;
 		const blob = new Blob([csvContent], { type: "text/csv" });
@@ -272,6 +288,11 @@
 					serialPort.close();
 				}}>Disconnect</button
 			>
+		{/if}
+		{#if serialPort}
+				<button
+				on:click={fire}
+				>FIRE</button>
 		{/if}
 		<button on:click={downloadCSV}>
 			Download CSV
